@@ -9,7 +9,6 @@
   * [1.4 Enable Model](#14-enable-model)
 * [2. Response Schema](#2-response-schema)
 * [3. Troubleshooting](#3-troubleshooting)
-* [4. Further Reading](#4-further-reading)
 
 ## 1. How to Support New Models
 
@@ -25,7 +24,7 @@ Integrating a custom model requires 4 simple steps:
 Your model must inherit from `BaseModel` and implement three methods:
 
 ```python
-from .base import BaseModel
+from . import BaseModel
 from app.schemas.shape import Shape
 
 class YourModel(BaseModel):
@@ -55,6 +54,7 @@ class YourModel(BaseModel):
 Just only use the `@register_model` decorator to register your model class.
 
 ```python
+...
 from app.core.registry import register_model
 
 @register_model("your_model_id")
@@ -100,6 +100,7 @@ widgets:
     value: 0.45
   - name: toggle_preserve_existing_annotations
     value: false
+  ...
 ```
 
 See [Widget Reference](./configuration.md#model-configuration) for details.
@@ -120,35 +121,15 @@ enabled_models:
 > - Models are displayed in X-AnyLabeling UI in the order listed here
 > - Comment out any model you don't want to load to save resources
 
-Then start the server:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-You can also test the API to verify your deployed model is loaded correctly:
-
-```bash
-# Check health
-curl http://localhost:8000/health
-
-# List models
-curl http://localhost:8000/v1/models
-
-# Run inference
-curl -X POST http://localhost:8000/v1/predict \
-  -H "Content-Type: application/json" \
-  -d '{"model": "your_model_id", "image": "data:image/png;base64,...", "params": {}}'
-```
-
 ## 2. Response Schema
 
-Your model's `predict()` method must return a dictionary with two fields:
+Your model's `predict()` method must return a dictionary with the following fields:
 
 ```python
 {
     "shapes": [...],      # List of Shape objects (can be empty for caption tasks)
-    "description": "..."  # Text description (can be empty for detection tasks)
+    "description": "...", # Text description (can be empty for detection tasks)
+    "replace": None       # Optional: Boolean flag to replace existing annotations (excluded if None)
 }
 ```
 
@@ -188,8 +169,3 @@ For detailed shape specifications, see the [X-AnyLabeling User Guide](https://gi
 | `Configuration file not found` | Check YAML file exists and `model_id` matches filename |
 | `Widget 'edit_conf' requires a default value` | Set `value: 0.25` in widgets config |
 | `Duplicate model_id found` | Each `model_id` must be unique |
-
-## 4. Further Reading
-
-- [API Reference](./router.md) - Complete REST API endpoint documentation
-- [Configuration Guide](./configuration.md) - Detailed server, logging, and performance configuration

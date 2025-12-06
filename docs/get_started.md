@@ -8,7 +8,7 @@
       * [1.1.2 Venv](#112-venv)
    * [1.2 Install Server](#12-install-server)
       * [1.2.1 Git Clone](#121-git-clone)
-* [2. Usage](#2-usage)
+* [2. Further Reading](#2-further-reading)
 
 ## 1. Installation
 
@@ -75,6 +75,7 @@ uv pip install -e .[all]
 
 > [!NOTE]
 > If you want to run the `sam3` service stably, make sure you are using Python 3.12 or higher, PyTorch 2.7 or higher, and a CUDA-compatible GPU with CUDA 12.6 or higher.
+> For `sam2`, you can directly install the `sam3` dependencies to build it.
 
 After installation, you can quickly start the service with the following command:
 
@@ -82,7 +83,39 @@ After installation, you can quickly start the service with the following command
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Once the server is running, open the [X-AnyLabeling client](https://github.com/CVHub520/X-AnyLabeling) and follow these steps:
+> [!TIP]
+> **Recommended:** Use the `x-anylabeling-server` command instead, which supports custom configuration files:
+> 
+> ```bash
+> # Start with default configs
+> x-anylabeling-server
+> 
+> # Start with custom config files
+> x-anylabeling-server \
+>   --config /path/to/custom/server.yaml \
+>   --models-config /path/to/custom/models.yaml
+> ```
+> 
+> For more configuration options, see the [Configuration Guide](./configuration.md).
+
+---
+
+You can test the API first to verify your deployed model is loaded correctly:
+
+```bash
+# Check health
+curl http://localhost:8000/health
+
+# List models
+curl http://localhost:8000/v1/models
+
+# Run inference
+curl -X POST http://localhost:8000/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{"model": "your_model_id", "image": "data:image/png;base64,...", "params": {}}'
+```
+
+Once the server is normal running, open the [X-AnyLabeling client](https://github.com/CVHub520/X-AnyLabeling) and follow these steps:
 
 1. Configure server connection in [`remote_server.yaml`](https://github.com/CVHub520/X-AnyLabeling/blob/main/anylabeling/configs/auto_labeling/remote_server.yaml):
    - Set `server_url` if you changed the default address/port
@@ -90,11 +123,13 @@ Once the server is running, open the [X-AnyLabeling client](https://github.com/C
 2. Launch X-AnyLabeling and press `Ctrl+A` to enable AI auto-labeling
 3. Open the model dropdown, navigate to the **CVHub** provider section, and select **Remote-Server**
 
-You can now use your remotely deployed models for auto-labeling!
+Now, sit back and let your remote models do the labeling work for you—enjoy the magic! 🤣
 
 > [!TIP]
-> For detailed usage instructions, refer to the [X-AnyLabeling User Guide](https://github.com/CVHub520/X-AnyLabeling/blob/main/docs/en/user_guide.md).
+> For detailed usage instructions for the client, refer to the [X-AnyLabeling User Guide](https://github.com/CVHub520/X-AnyLabeling/blob/main/docs/en/user_guide.md).
 
-## 2. Usage
+## 2. Further Reading
 
-For detailed instructions on how to use X-AnyLabeling-Server, please refer to the corresponding [User Guide](./user_guide.md).
+- [User Guide](./user_guide.md): Step-by-step guide for integrating custom models, response schema specifications, and troubleshooting.
+- [API Reference](./router.md): Complete REST API endpoint documentation.
+- [Configuration Guide](./configuration.md): Detailed server, logging, and performance configuration.

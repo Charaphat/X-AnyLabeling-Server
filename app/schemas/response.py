@@ -39,3 +39,7 @@ class PredictResponse(BaseModel):
 
     shapes: List[Shape] = []
     description: str = ""
+    replace: Optional[bool] = None
+
+    class Config:
+        exclude_none = True

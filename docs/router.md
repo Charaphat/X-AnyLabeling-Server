@@ -224,6 +224,7 @@ Execute model inference on an image.
 |-------|------|-------------|
 | `data.shapes` | Array | List of detected objects (see [Shape Schema](./user_guide.md#13-response-schema)) |
 | `data.description` | String | Generated text description (for caption tasks) |
+| `data.replace` | Boolean | Optional flag indicating whether to replace existing annotations (excluded if `None`) |
 
 **Model Not Found:**
 ```json
