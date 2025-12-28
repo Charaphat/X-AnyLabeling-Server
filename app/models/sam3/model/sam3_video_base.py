@@ -59,14 +59,12 @@ class Sam3VideoBase(nn.Module):
         hotstart_delay=0,
         hotstart_unmatch_thresh=3,
         hotstart_dup_thresh=3,
-        # Whether to suppress masks only within hotstart. If False, we can suppress masks even if they start before hotstart period.
-        suppress_unmatched_only_within_hotstart=True,
-        init_trk_keep_alive=0,
-        max_trk_keep_alive=8,
+        init_trk_keep_alive=30,
+        max_trk_keep_alive=30,
         min_trk_keep_alive=-4,
         # Threshold for suppressing overlapping objects based on recent occlusion
         suppress_overlapping_based_on_recent_occlusion_threshold=0.0,
-        decrease_trk_keep_alive_for_empty_masklets=False,
+        decrease_trk_keep_alive_for_empty_masklets=True,
         o2o_matching_masklets_enable=False,  # Enable hungarian matching to match existing masklets
         suppress_det_close_to_boundary=False,
         fill_hole_area=16,
@@ -98,9 +96,6 @@ class Sam3VideoBase(nn.Module):
         self.hotstart_delay = hotstart_delay
         self.hotstart_unmatch_thresh = hotstart_unmatch_thresh
         self.hotstart_dup_thresh = hotstart_dup_thresh
-        self.suppress_unmatched_only_within_hotstart = (
-            suppress_unmatched_only_within_hotstart
-        )
         self.init_trk_keep_alive = init_trk_keep_alive
         self.max_trk_keep_alive = max_trk_keep_alive
         self.min_trk_keep_alive = min_trk_keep_alive
@@ -1425,7 +1420,6 @@ class Sam3VideoBase(nn.Module):
         ]
         # removed_obj_ids: object IDs that are suppressed via hot-start
         removed_obj_ids = rank0_metadata["removed_obj_ids"]
-        suppressed_obj_ids = rank0_metadata["suppressed_obj_ids"][frame_idx]
 
         obj_ids_newly_removed = (
             set()
@@ -1488,14 +1482,13 @@ class Sam3VideoBase(nn.Module):
             if (
                 trk_keep_alive[obj_id]
                 <= 0  # Object has not been matched for too long
-                and not self.suppress_unmatched_only_within_hotstart
                 and obj_id not in removed_obj_ids
                 and obj_id not in obj_ids_newly_removed
             ):
                 logger.debug(
-                    f"Suppressing object {obj_id} at frame {frame_idx}, due to being unmatched"
+                    f"Removing object {obj_id} at frame {frame_idx}, due to being unmatched"
                 )
-                suppressed_obj_ids.add(obj_id)
+                obj_ids_newly_removed.add(obj_id)
 
         # Step 3: removed tracks that overlaps with another track for `hotstart_dup_thresh` frames
         # a) find overlaps tracks -- we consider overlap if they match to the same detection
@@ -1738,9 +1731,6 @@ class Sam3VideoBase(nn.Module):
                 ),  # This is used only for object suppression not for removal
                 "overlap_pair_to_frame_inds": defaultdict(list),
                 "removed_obj_ids": set(),
-                "suppressed_obj_ids": defaultdict(
-                    set
-                ),  # frame_idx --> set of objects with suppressed outputs, but still continue to be tracked
             }
             if self.masklet_confirmation_enable:
                 # all the following are npt.NDArray with the same shape as `obj_ids_all_gpu`

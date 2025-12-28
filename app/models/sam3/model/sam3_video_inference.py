@@ -345,7 +345,6 @@ class Sam3VideoInference(Sam3VideoBase):
             for yield_frame_idx, yield_out in yield_list:
                 # post-process the output and yield it
                 if self.rank == 0:
-                    suppressed_obj_ids = yield_out["suppressed_obj_ids"]
                     unconfirmed_status_frame_idx = (
                         yield_frame_idx + unconfirmed_status_delay
                         if not reverse
@@ -365,7 +364,6 @@ class Sam3VideoInference(Sam3VideoBase):
                         inference_state,
                         yield_out,
                         hotstart_removed_obj_ids,
-                        suppressed_obj_ids,
                         unconfirmed_obj_ids,
                     )
 
@@ -373,7 +371,6 @@ class Sam3VideoInference(Sam3VideoBase):
                         inference_state,
                         yield_frame_idx,
                         yield_out["obj_id_to_mask"],
-                        suppressed_obj_ids=suppressed_obj_ids,
                         removed_obj_ids=hotstart_removed_obj_ids,
                         unconfirmed_obj_ids=unconfirmed_obj_ids,
                     )
@@ -445,9 +442,6 @@ class Sam3VideoInference(Sam3VideoBase):
             rank0_metadata = tracker_metadata_new["rank0_metadata"]
             removed_obj_ids = rank0_metadata["removed_obj_ids"]
             out["removed_obj_ids"] = removed_obj_ids
-            out["suppressed_obj_ids"] = rank0_metadata["suppressed_obj_ids"][
-                frame_idx
-            ]
             out["frame_stats"] = frame_stats
             if self.masklet_confirmation_enable:
                 status = rank0_metadata["masklet_confirmation"]["status"]
@@ -467,7 +461,6 @@ class Sam3VideoInference(Sam3VideoBase):
         inference_state,
         out,
         removed_obj_ids=None,
-        suppressed_obj_ids=None,
         unconfirmed_obj_ids=None,
     ):
         obj_id_to_mask = out["obj_id_to_mask"]  # low res masks
@@ -508,8 +501,6 @@ class Sam3VideoInference(Sam3VideoBase):
             ).cpu()  # remove masks with 0 areas
             # hide outputs for those object IDs in `obj_ids_to_hide`
             obj_ids_to_hide = []
-            if suppressed_obj_ids is not None:
-                obj_ids_to_hide.extend(suppressed_obj_ids)
             if removed_obj_ids is not None:
                 obj_ids_to_hide.extend(removed_obj_ids)
             if unconfirmed_obj_ids is not None:
@@ -576,16 +567,13 @@ class Sam3VideoInference(Sam3VideoBase):
         inference_state,
         frame_idx,
         obj_id_to_mask,
-        suppressed_obj_ids=None,
         removed_obj_ids=None,
         unconfirmed_obj_ids=None,
     ):
-        # Filter out suppressed, removed, and unconfirmed objects from the cache
+        # Filter out removed and unconfirmed objects from the cache
         filtered_obj_id_to_mask = obj_id_to_mask.copy()
 
         objects_to_exclude = set()
-        if suppressed_obj_ids is not None:
-            objects_to_exclude.update(suppressed_obj_ids)
         if removed_obj_ids is not None:
             objects_to_exclude.update(removed_obj_ids)
         if unconfirmed_obj_ids is not None:
@@ -856,7 +844,6 @@ class Sam3VideoInference(Sam3VideoBase):
                         ),
                     },
                     "removed_obj_ids": set(),
-                    "suppressed_obj_ids": defaultdict(set),
                 },
             }
         )
@@ -1143,11 +1130,7 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
                     obj_id_to_mask = inference_state[
                         "cached_frame_outputs"
                     ].get(frame_idx, {})
-                    # post processing - remove suppressed obj_ids
                     obj_id_to_score = tracker_metadata["obj_id_to_score"]
-                    suppressed_obj_ids = tracker_metadata["rank0_metadata"][
-                        "suppressed_obj_ids"
-                    ][frame_idx]
                     obj_id_to_tracker_score = tracker_metadata[
                         "obj_id_to_tracker_score_frame_wise"
                     ][frame_idx]
@@ -1162,7 +1145,6 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
                         self._postprocess_output(
                             inference_state,
                             out,
-                            suppressed_obj_ids=suppressed_obj_ids,
                         ),
                     )
                 else:
@@ -1290,24 +1272,16 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
                             "obj_id_to_tracker_score_frame_wise"
                         ][frame_idx],
                     }
-                    suppressed_obj_ids = tracker_metadata["rank0_metadata"][
-                        "suppressed_obj_ids"
-                    ][frame_idx]
                     self._cache_frame_outputs(
                         inference_state,
                         frame_idx,
                         obj_id_to_mask,
-                        suppressed_obj_ids=suppressed_obj_ids,
                     )
-                    suppressed_obj_ids = tracker_metadata["rank0_metadata"][
-                        "suppressed_obj_ids"
-                    ][frame_idx]
                     yield (
                         frame_idx,
                         self._postprocess_output(
                             inference_state,
                             out,
-                            suppressed_obj_ids=suppressed_obj_ids,
                         ),
                     )
                 else:
@@ -1664,12 +1638,6 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
             if "removed_obj_ids" in rank0_metadata:
                 rank0_metadata["removed_obj_ids"].discard(obj_id)
 
-            if "suppressed_obj_ids" in rank0_metadata:
-                for frame_id in rank0_metadata["suppressed_obj_ids"]:
-                    rank0_metadata["suppressed_obj_ids"][frame_id].discard(
-                        obj_id
-                    )
-
             if "masklet_confirmation" in rank0_metadata:
                 obj_ids_all_gpu = tracker_metadata["obj_ids_all_gpu"]
                 obj_indices = np.where(obj_ids_all_gpu == obj_id)[0]
@@ -1742,11 +1710,7 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
                 frame_idx,
                 {obj_id: new_mask_data} if new_mask_data is not None else None,
             )
-            # post processing - remove suppressed obj_ids
             obj_id_to_score = tracker_metadata["obj_id_to_score"]
-            suppressed_obj_ids = tracker_metadata["rank0_metadata"][
-                "suppressed_obj_ids"
-            ][frame_idx]
             obj_id_to_tracker_score = tracker_metadata[
                 "obj_id_to_tracker_score_frame_wise"
             ][frame_idx]
@@ -1760,10 +1724,9 @@ class Sam3VideoInferenceWithInstanceInteractivity(Sam3VideoInference):
                 inference_state,
                 frame_idx,
                 obj_id_to_mask,
-                suppressed_obj_ids=suppressed_obj_ids,
             )
             return frame_idx, self._postprocess_output(
-                inference_state, out, suppressed_obj_ids=suppressed_obj_ids
+                inference_state, out
             )
         else:
             return frame_idx, None  # no output on other GPUs
