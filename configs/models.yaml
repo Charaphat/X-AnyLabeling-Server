@@ -12,3 +12,10 @@ enabled_models:
   # - segment_anything_3
   - segment_anything_3_video
   # - glm_4_6v_grounding_api
+  # YOLOE models (requires ultralytics with YOLOE support)
+  # - yoloe_v8s
+  # - yoloe_v8m
+  # - yoloe_v8l
+  # - yoloe_11s
+  # - yoloe_11m
+  # - yoloe_11l

@@ -1,0 +1,35 @@
+model_id: yoloe_v8m
+display_name: "YOLOE-v8-M"
+batch_processing_mode: "text_prompt"
+
+params:
+  model_path: "yoloe-v8m-seg.pt"
+  model_pf_path: "yoloe-v8m-seg-pf.pt"
+  embedding_model_path: "mobileclip_blt.pt"
+  input_size: 640
+  conf_threshold: 0.25
+  iou_threshold: 0.70
+  max_det: 1000
+  output_mode: "rectangle"
+
+widgets:
+  - name: output_select_combobox
+    value: "rectangle"
+  - name: edit_text
+    value: null
+  - name: button_send
+    value: null
+  - name: input_conf
+    value: null
+  - name: edit_conf
+    value: 0.25
+  - name: input_iou
+    value: null
+  - name: edit_iou
+    value: 0.70
+  - name: toggle_preserve_existing_annotations
+    value: false
+  - name: button_add_rect
+    value: null
+  - name: button_clear
+    value: null
