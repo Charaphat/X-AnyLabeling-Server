@@ -3,9 +3,9 @@ display_name: "YOLOE-11-L"
 batch_processing_mode: "text_prompt"
 
 params:
-  model_path: "yoloe-11l-seg.pt"
-  model_pf_path: "yoloe-11l-seg-pf.pt"
-  embedding_model_path: "mobileclip_blt.pt"
+  model_path: "assets/models/yoloe-11l-seg.pt"
+#  model_pf_path: "yoloe-11l-seg-pf.pt"
+  embedding_model_path: "assets/models/mobileclip_blt.pt"
   input_size: 640
   conf_threshold: 0.25
   iou_threshold: 0.70

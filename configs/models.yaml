@@ -1,21 +1,10 @@
 enabled_models:
-  - yolo11n
-  - yolo11n_seg
-  - yolo11n_pose
-  - yolo11n_obb
-  - yolo11n_track
-  # - yolo11s
-  # - qwen3vl_caption_transformers
-  # - qwen3vl_grounding_transformers
-  # - qwen3vl_caption_api
-  # - segment_anything_2
+#  - yolo11n
   # - segment_anything_3
-  - segment_anything_3_video
-  # - glm_4_6v_grounding_api
-  # YOLOE models (requires ultralytics with YOLOE support)
+  #  - segment_anything_3_video
   # - yoloe_v8s
   # - yoloe_v8m
   # - yoloe_v8l
   # - yoloe_11s
   # - yoloe_11m
-  # - yoloe_11l
+  - yoloe_11l
